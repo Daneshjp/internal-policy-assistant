@@ -1,0 +1,9 @@
+export { LoginPage } from './LoginPage';
+export { RegisterPage } from './RegisterPage';
+export { DashboardPage } from './DashboardPage';
+export { ChatPage } from './ChatPage';
+export { DocumentsPage } from './DocumentsPage';
+export { CategoriesPage } from './CategoriesPage';
+export { AnalyticsPage } from './AnalyticsPage';
+export { SettingsPage } from './SettingsPage';
+export { AdminPage } from './AdminPage';
