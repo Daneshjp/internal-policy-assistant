@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_active_user
@@ -34,8 +35,8 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     existing_user = auth_service.get_user_by_email(db, request.email)
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": "duplicate_email", "message": "Email already registered"}
         )
 
     # Create user
@@ -45,7 +46,15 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         password=request.password,
         full_name=request.full_name
     )
-    user = auth_service.create_user(db, user_create)
+
+    try:
+        user = auth_service.create_user(db, user_create)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": "duplicate_email", "message": "Email already registered"}
+        )
 
     return user
 
