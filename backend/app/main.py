@@ -6,29 +6,32 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.exceptions import AppException
-from app.routers import auth, categories, documents
+from app.routers import auth, categories, documents, policies
 
 # Create FastAPI application
 app = FastAPI(
     title=settings.APP_NAME,
     version="1.0.0",
-    description="Internal Policy Assistant API"
+    description="Internal Policy Assistant API",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # Configure CORS middleware (allow all origins for development)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],  # tighten later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
+# -------------------------
 # Exception handlers
+# -------------------------
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
-    """Handle custom application exceptions."""
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -39,21 +42,24 @@ async def app_exception_handler(request: Request, exc: AppException):
         }
     )
 
+# -------------------------
+# Root sanity check
+# -------------------------
+@app.get("/")
+async def root():
+    return {"message": "Internal Policy Assistant API is running"}
 
-# Health check endpoint
-@app.get("/health")
+# -------------------------
+# Health check (MATCHES DOCKER)
+# -------------------------
+@app.get("/api/v1/health")
 async def health():
-    """Health check endpoint."""
     return {"status": "healthy"}
 
-
+# -------------------------
 # Include routers
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(categories.router, prefix="/api/v1")
-app.include_router(documents.router, prefix="/api/v1")
-
-# Router placeholders - to be implemented in later phases
-# from app.routers import conversations, analytics, admin
-# app.include_router(conversations.router, prefix="/api/v1")
-# app.include_router(analytics.router, prefix="/api/v1")
-# app.include_router(admin.router, prefix="/api/v1")
+# -------------------------
+app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+app.include_router(policies.router, prefix="/api/v1")
+app.include_router(categories.router, prefix="/api/v1", tags=["categories"])
+app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
